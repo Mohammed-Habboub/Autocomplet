@@ -1,16 +1,7 @@
 const input = document.getElementById('autocomplete-input');
 const suggestionsList = document.getElementById('suggestions');
-let dictionaryData = [];
 
-// Load the dictionary data
-fetch('/dictionary.json')
-  .then(response => response.json())
-  .then(data => {
-    dictionaryData = data;
-  })
-  .catch(error => console.error('Error loading dictionary data:', error));
-
-  input.addEventListener('input', () => {
+input.addEventListener('input', () => {
     const userInput = input.value.trim().toLowerCase();
     
     // Clear previous suggestions
@@ -20,28 +11,33 @@ fetch('/dictionary.json')
         // If the input is empty, hide the dropdown
         hideDropdown();
     } else {
-        // Show suggestions that start with user input
-        const suggestions = dictionaryData.filter(word =>
-            word.toLowerCase().startsWith(userInput)
-        );
+        // Make a request to the Express.js server for suggestions
+        fetch(`/autocomplete?input=${userInput}`)
+          .then(response => response.json())
+          .then(data => {
+            data.forEach(word => {
+              const listItem = document.createElement('li');
+              listItem.textContent = word;
+              suggestionsList.appendChild(listItem);
 
-        suggestions.forEach(word => {
-            const listItem = document.createElement('li');
-            listItem.textContent = word;
-            suggestionsList.appendChild(listItem);
-
-            // Handle click on suggestion
-            listItem.addEventListener('click', () => {
-                input.value = word;
-                hideDropdown();
+              // Handle click on suggestion
+              listItem.addEventListener('click', () => {
+                  input.value = word;
+                  hideDropdown();
+              });
             });
-        });
 
-        // Display suggestions list if there are suggestions
-        if (suggestions.length > 0) {
-            suggestionsList.style.display = 'block';
-        } else {
-            suggestionsList.style.display = 'none';
-        }
+            // Display suggestions list if there are suggestions
+            if (data.length > 0) {
+                suggestionsList.style.display = 'block';
+            } else {
+                suggestionsList.style.display = 'none';
+            }
+          })
+          .catch(error => console.error('Error loading suggestions:', error));
     }
 });
+
+function hideDropdown() {
+    suggestionsList.style.display = 'none';
+}
